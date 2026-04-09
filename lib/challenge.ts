@@ -347,7 +347,7 @@ export function getProgressSummary(
     creditedMiles,
     totalRequired,
     totalRequiredFullYear,
-    surplusDeficitMiles: totalLogged - totalRequired,
+    surplusDeficitMiles: catchUpLogged - catchUpRequired,
     catchUpDeficitMiles: Math.max(catchUpRequired - catchUpLogged, 0),
     currentStreak,
     longestStreak,

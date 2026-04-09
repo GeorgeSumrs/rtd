@@ -863,7 +863,7 @@ export function DashboardPage() {
             {surface(
               "Surplus / deficit",
               `${progress.surplusDeficitMiles >= 0 ? "+" : ""}${formatMiles(progress.surplusDeficitMiles)} mi`,
-              "Calculated against required miles to date",
+              "Excludes today's unmet mileage until tomorrow",
               "dark",
               "info",
             )}
@@ -998,7 +998,7 @@ export function ProgressPage() {
         {surface("Days completed", `${progress.completedDays}/${progress.totalDaysInYear}`, `${Math.round((progress.completedDays / Math.max(progress.totalDaysInYear, 1)) * 100)}% of challenge year`)}
         {surface("Days missed", `${progress.missedDays}`, "Includes incomplete logged days")}
         {surface("Total miles logged", `${formatMiles(progress.totalLogged)} mi`, `${formatMiles(progress.totalRequired)} required to date`)}
-        {surface("Surplus / deficit", `${progress.surplusDeficitMiles >= 0 ? "+" : ""}${formatMiles(progress.surplusDeficitMiles)} mi`, "Logged minus required")}
+        {surface("Surplus / deficit", `${progress.surplusDeficitMiles >= 0 ? "+" : ""}${formatMiles(progress.surplusDeficitMiles)} mi`, "Based on past required miles only")}
       </div>
       <PolylineChart title="Cumulative miles" subtitle="Actual miles versus required miles across the challenge year." actual={chartData.cumulativeActual} required={chartData.cumulativeRequired} todayX={getDayOfYear(todayIso)} />
       <div className="flex gap-3">

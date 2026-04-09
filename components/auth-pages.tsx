@@ -65,10 +65,8 @@ export function SignInCard() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [resetSentTo, setResetSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState<"signin" | "strava" | "reset" | null>(null);
 
   return (
@@ -155,44 +153,6 @@ export function SignInCard() {
         >
           {busy === "strava" ? "Redirecting to Strava..." : "Sign in with Strava"}
         </button>
-
-        <div className="rounded-[24px] border border-[var(--line)] bg-[var(--slate-soft)] p-4">
-          <p className="font-semibold text-[var(--ink)]">Forgot password?</p>
-          <form
-            className="mt-3 flex flex-col gap-3 sm:flex-row"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setBusy("reset");
-              setError(null);
-              setStatus(null);
-              try {
-                await authClient.requestPasswordReset({
-                  email: resetEmail,
-                  redirectTo: `${window.location.origin}/reset-password`,
-                });
-                setResetSentTo(resetEmail);
-                setStatus("If that email exists, a reset link has been sent.");
-              } catch (nextError) {
-                setError(nextError instanceof Error ? nextError.message : "Unable to send reset link.");
-              } finally {
-                setBusy(null);
-              }
-            }}
-          >
-            <input
-              type="email"
-              placeholder="name@email.com"
-              value={resetEmail}
-              onChange={(event) => setResetEmail(event.target.value)}
-              className="field flex-1"
-              required
-            />
-            <button type="submit" className="btn btn-secondary" disabled={busy !== null}>
-              {busy === "reset" ? "Sending..." : "Send reset link"}
-            </button>
-          </form>
-          {resetSentTo ? <div className="mt-4"><DevEmailNotice email={resetSentTo} kind="reset" /></div> : null}
-        </div>
 
         {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
         {status ? <p className="text-sm text-[var(--muted)]">{status}</p> : null}
