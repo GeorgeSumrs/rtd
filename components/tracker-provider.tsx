@@ -33,6 +33,7 @@ type UpsertRunEntryInput = {
   startedAt?: string;
   source?: RunSegment["source"];
   stravaActivityId?: string;
+  recoveryCompleted?: boolean;
 };
 
 type TrackerContextValue = {
@@ -116,6 +117,7 @@ export function TrackerProvider({
           startedAt: input.startedAt,
           source: input.source,
           stravaActivityId: input.stravaActivityId,
+          recoveryCompleted: input.recoveryCompleted,
         });
       },
       deleteRunSegment: (runId) => {

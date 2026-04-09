@@ -62,11 +62,15 @@ async function requireViewerWithDb(
   return { user, profile };
 }
 
-function normalizeChecklist(defaultChecklistItems: string[], items: Array<{ id: string; label: string; completed: boolean; order: number }>, completed: boolean) {
+function normalizeChecklist(
+  items: Array<{ id: string; label: string; completed: boolean; order: number }>,
+  completed: boolean,
+  recoveryCompleted: boolean,
+) {
   if (items.length) {
-    return ensureChecklist(items, completed);
+    return ensureChecklist(items, completed, recoveryCompleted);
   }
-  return buildChecklistItems(defaultChecklistItems, completed);
+  return buildChecklistItems(completed, recoveryCompleted);
 }
 
 async function ensureProfileDoc(ctx: GenericMutationCtx<DataModel>) {
@@ -155,9 +159,9 @@ export const getTrackerState = query({
               date: day.date,
               runs: day.runs,
               checklistItems: normalizeChecklist(
-                settings.defaultChecklistItems,
                 day.checklistItems,
                 aggregateRuns(day.date, day.runs, day.completedOverride).completed,
+                day.checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
               ),
               media: day.media,
               completedOverride: day.completedOverride,
@@ -186,6 +190,7 @@ export const upsertRunEntry = mutation({
     startedAt: v.optional(v.string()),
     source: v.optional(v.union(v.literal("manual"), v.literal("strava"))),
     stravaActivityId: v.optional(v.string()),
+    recoveryCompleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { user, profile } = await ensureProfileDoc(ctx);
@@ -225,9 +230,9 @@ export const upsertRunEntry = mutation({
         await ctx.db.patch(day._id, {
           runs: remainingRuns,
           checklistItems: normalizeChecklist(
-            profile.defaultChecklistItems,
             day.checklistItems,
             aggregateRuns(day.date, remainingRuns, day.completedOverride).completed,
+            day.checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
           ),
           updatedAt: now,
         });
@@ -241,9 +246,11 @@ export const upsertRunEntry = mutation({
       : [run];
 
     const nextChecklist = normalizeChecklist(
-      profile.defaultChecklistItems,
       targetDoc?.checklistItems ?? [],
       aggregateRuns(args.date, nextRuns, args.completedOverride).completed,
+      args.recoveryCompleted ??
+        targetDoc?.checklistItems.find((item) => item.label === "Recovery")?.completed ??
+        false,
     );
 
     if (targetDoc) {
@@ -294,9 +301,9 @@ export const deleteRunSegment = mutation({
         await ctx.db.patch(day._id, {
           runs: remainingRuns,
           checklistItems: normalizeChecklist(
-            profile.defaultChecklistItems,
             day.checklistItems,
             aggregateRuns(day.date, remainingRuns, day.completedOverride).completed,
+            day.checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
           ),
           updatedAt: Date.now(),
         });
@@ -529,9 +536,9 @@ export const importStravaRuns = mutation({
       const day = byDate.get(run.assignedDate);
       const nextRuns = [...(day?.runs ?? []), run];
       const nextChecklist = normalizeChecklist(
-        profile.defaultChecklistItems,
         day?.checklistItems ?? [],
         aggregateRuns(run.assignedDate, nextRuns, day?.completedOverride).completed,
+        day?.checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
       );
 
       if (day) {

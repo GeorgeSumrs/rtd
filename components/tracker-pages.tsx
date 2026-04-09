@@ -28,6 +28,7 @@ import {
   secondsToTimeString,
   timeStringToSeconds,
 } from "@/lib/challenge";
+import { StravaSyncPreviewModal } from "@/components/strava-log-upload-card";
 import { api } from "@/convex/_generated/api";
 import { useTracker } from "@/components/tracker-provider";
 import { authClient } from "@/lib/auth-client";
@@ -300,15 +301,22 @@ function CalendarMonth({
             {week.map((date) => {
               const entry = byDate.get(date);
               const state = getStatusTone(date, entry, todayIso);
+              const stateLabel =
+                date === todayIso && !entry?.completed ? "today" : state;
               const sameMonth = parseIsoDate(date).getMonth() + 1 === month;
               const sameYear = parseIsoDate(date).getFullYear() === year;
               const thumb = entry?.media[0];
+              const recoveryChecked = Boolean(
+                entry?.checklistItems.find(
+                  (item) => item.label === "Recovery" && item.completed,
+                ),
+              );
               return (
                 <Link
                   key={date}
                   href={`/log/${date}`}
                   className={cx(
-                    "group min-h-[84px] rounded-[18px] border p-2 text-left transition lg:min-h-[110px] lg:rounded-[22px] lg:p-3",
+                    "group relative min-h-[84px] rounded-[18px] border p-2 text-left transition lg:min-h-[110px] lg:rounded-[22px] lg:p-3",
                     !sameYear && "border-[var(--line)] bg-[var(--slate-soft)]",
                     sameYear && state === "complete" && "border-transparent bg-[var(--green-soft)]",
                     sameYear && state === "partial" && "border-transparent bg-[var(--yellow-soft)]",
@@ -328,7 +336,7 @@ function CalendarMonth({
                       </span>
                     ) : (
                       <span className="text-[9px] uppercase tracking-[0.12em] text-[var(--muted)] lg:text-[11px] lg:tracking-[0.18em]">
-                        {state}
+                        {stateLabel}
                       </span>
                     )}
                   </div>
@@ -342,6 +350,11 @@ function CalendarMonth({
                   <p className="text-[10px] text-[var(--muted)] lg:text-xs">
                     {!sameYear ? "" : entry ? "logged miles" : "required miles"}
                   </p>
+                  {sameYear && recoveryChecked ? (
+                    <span className="absolute bottom-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--red-strong)] text-[10px] font-semibold text-white lg:bottom-3 lg:right-3 lg:h-6 lg:w-6 lg:text-xs">
+                      R
+                    </span>
+                  ) : null}
                   {sameYear && thumb ? (
                     <Image
                       alt={thumb.name}
@@ -479,6 +492,9 @@ function LogForm({
         : "incomplete"
       : "auto",
   );
+  const [recoveryCompleted, setRecoveryCompleted] = useState(
+    entry?.checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
+  );
   const [showSplits, setShowSplits] = useState(Boolean(run?.splits.length));
   const [splits, setSplits] = useState<Array<{ id: string; mileNumber: number; pace: string }>>(() =>
     run?.splits.length
@@ -534,6 +550,7 @@ function LogForm({
           startedAt: run?.startedAt,
           source: run?.source ?? "manual",
           stravaActivityId: run?.stravaActivityId,
+          recoveryCompleted,
         });
         onSaved?.();
       }}
@@ -601,6 +618,15 @@ function LogForm({
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={1000} className="field min-h-28" />
       </label>
 
+      <label className="flex items-center gap-3 rounded-[20px] bg-[var(--slate-soft)] px-4 py-3 text-sm text-[var(--ink)]">
+        <input
+          type="checkbox"
+          checked={recoveryCompleted}
+          onChange={(event) => setRecoveryCompleted(event.target.checked)}
+        />
+        <span className="font-medium">Recovery</span>
+      </label>
+
       <div className="rounded-[24px] bg-[var(--slate-soft)] p-4">
         <button type="button" onClick={() => setShowSplits((current) => !current)} className="text-sm font-semibold text-[var(--ink)]">
           {showSplits ? "Hide" : "Show"} splits
@@ -644,7 +670,9 @@ function ChecklistEditor({ date, entry }: { date: string; entry: RunEntry }) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h3 className="font-display text-2xl tracking-tight text-[var(--ink)]">Checklist</h3>
-          <p className="text-sm text-[var(--muted)]">Run completed syncs automatically with the entry status.</p>
+          <p className="text-sm text-[var(--muted)]">
+            Run completed syncs automatically with the entry status. Recovery can be adjusted here if needed.
+          </p>
         </div>
       </div>
       <div className="mt-5 space-y-3">
@@ -1134,8 +1162,6 @@ export function SettingsPage() {
   const [previewRuns, setPreviewRuns] = useState<StravaSyncPreviewItem[]>([]);
   const [selectedPreviewRunIds, setSelectedPreviewRunIds] = useState<string[]>([]);
   const autoSyncAttempted = useRef(false);
-
-  const checklistDefaultText = store.settings.defaultChecklistItems.join("\n");
   const stravaConnected = Boolean(store.stravaConnection);
   const usingPlaceholderEmail = Boolean(
     session?.user?.email?.endsWith("@strava.rtd.local"),
@@ -1189,9 +1215,6 @@ export function SettingsPage() {
     }
   }, [previewPending, previewStravaRuns, store.stravaConnection, syncing]);
 
-  const allPreviewRunsSelected =
-    previewRuns.length > 0 && selectedPreviewRunIds.length === previewRuns.length;
-
   useEffect(() => {
     const shouldAutoSync = searchParams.get("strava") === "linked";
     if (!shouldAutoSync || !store.stravaConnection || autoSyncAttempted.current) {
@@ -1210,99 +1233,59 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      {previewOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-[30px] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
-            <div className="border-b border-[var(--line)] px-6 py-5">
-              <h2 className="font-display text-3xl tracking-tight text-[var(--ink)]">Review Strava import</h2>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {previewRuns.length} run{previewRuns.length === 1 ? "" : "s"} will be added.
-              </p>
-            </div>
-            <div className="max-h-[48vh] overflow-y-auto px-6 py-4">
-              <div className="space-y-3">
-                {previewRuns.map((run) => (
-                  <label key={run.id} className="flex cursor-pointer items-start gap-3 rounded-[20px] bg-[var(--slate-soft)] px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedPreviewRunIds.includes(run.id)}
-                      onChange={(event) => {
-                        setSelectedPreviewRunIds((current) =>
-                          event.target.checked
-                            ? [...current, run.id]
-                            : current.filter((id) => id !== run.id),
-                        );
-                      }}
-                      className="mt-1"
-                    />
-                    <div>
-                      <p className="font-semibold text-[var(--ink)]">{run.name}</p>
-                      <p className="mt-1 text-sm text-[var(--muted)]">
-                        {getLongDate(run.date)} · {formatMiles(run.actualMiles)} mi
-                      </p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-3 border-t border-[var(--line)] px-6 py-5">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setSelectedPreviewRunIds(
-                    allPreviewRunsSelected ? [] : previewRuns.map((run) => run.id),
-                  );
-                }}
-                disabled={syncing}
-              >
-                {allPreviewRunsSelected ? "Deselect all" : "Select all"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setPreviewOpen(false);
-                  setSelectedPreviewRunIds([]);
-                }}
-                disabled={syncing}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={syncing || selectedPreviewRunIds.length === 0}
-                onClick={async () => {
-                  await runStravaSync(selectedPreviewRunIds);
-                  setPreviewOpen(false);
-                  setPreviewRuns([]);
-                  setSelectedPreviewRunIds([]);
-                }}
-              >
-                {syncing ? "Syncing..." : "Add runs"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      <SectionHeader eyebrow="Settings" title="Challenge defaults" body="Default checklist items apply to new run entries. The year selector switches the active challenge window for the whole app." />
+      <StravaSyncPreviewModal
+        open={previewOpen}
+        runs={previewRuns}
+        selectedRunIds={selectedPreviewRunIds}
+        syncing={syncing}
+        onToggleRun={(runId, checked) => {
+          setSelectedPreviewRunIds((current) =>
+            checked ? [...current, runId] : current.filter((id) => id !== runId),
+          );
+        }}
+        onToggleAll={() => {
+          setSelectedPreviewRunIds((current) =>
+            current.length === previewRuns.length ? [] : previewRuns.map((run) => run.id),
+          );
+        }}
+        onCancel={() => {
+          setPreviewOpen(false);
+          setSelectedPreviewRunIds([]);
+        }}
+        onConfirm={() => {
+          void (async () => {
+            await runStravaSync(selectedPreviewRunIds);
+            setPreviewOpen(false);
+            setPreviewRuns([]);
+            setSelectedPreviewRunIds([]);
+          })();
+        }}
+      />
+      <SectionHeader
+        eyebrow="Settings"
+        title="Challenge defaults"
+        body="Run completed is automatic for each day, and Recovery can be marked when you log a run. The year selector switches the active challenge window for the whole app."
+      />
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <div className="rounded-[30px] border border-[var(--line)] bg-white p-6">
-          <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">Default checklist items</h2>
-          <p className="mt-2 text-sm text-[var(--muted)]">One item per line. New entries inherit these labels.</p>
-          <SettingsChecklistEditor
-            key={checklistDefaultText}
-            initialValue={checklistDefaultText}
-            onSave={(value) =>
-              updateSettings({
-                defaultChecklistItems: value
-                  .split("\n")
-                  .map((item) => item.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
+          <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">Checklist defaults</h2>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Every logged day automatically gets two baseline items:
+          </p>
+          <div className="mt-5 space-y-3">
+            <div className="rounded-[20px] bg-[var(--slate-soft)] px-4 py-3">
+              <p className="font-medium text-[var(--ink)]">Run completed</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Checked automatically when the day meets its mileage requirement.
+              </p>
+            </div>
+            <div className="rounded-[20px] bg-[var(--slate-soft)] px-4 py-3">
+              <p className="font-medium text-[var(--ink)]">Recovery</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Optional when logging a run. Checked recovery shows as a red R on the calendar.
+              </p>
+            </div>
+          </div>
         </div>
         <div className="space-y-6">
           <div className="rounded-[30px] border border-[var(--line)] bg-white p-6">
@@ -1489,34 +1472,12 @@ export function SettingsPage() {
   );
 }
 
+
 function DevEmailNoticeInline({ email }: { email: string }) {
   return (
     <p className="text-sm text-[var(--muted)]">
       If no email provider is configured yet, watch the development inbox for {email}.
     </p>
-  );
-}
-
-function SettingsChecklistEditor({
-  initialValue,
-  onSave,
-}: {
-  initialValue: string;
-  onSave: (value: string) => void;
-}) {
-  const [value, setValue] = useState(initialValue);
-
-  return (
-    <>
-      <textarea value={value} onChange={(event) => setValue(event.target.value)} className="field mt-5 min-h-48" />
-      <button
-        type="button"
-        onClick={() => onSave(value)}
-        className="btn btn-primary mt-4"
-      >
-        Save checklist defaults
-      </button>
-    </>
   );
 }
 

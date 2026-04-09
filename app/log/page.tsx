@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { toIsoDate } from "@/lib/challenge";
+import { StravaLogUploadCard } from "@/components/strava-log-upload-card";
 import { requireAuth } from "@/lib/page-auth";
 
 export default async function Page() {
@@ -7,14 +8,14 @@ export default async function Page() {
   const todayIso = toIsoDate(new Date());
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <div className="text-center">
         <h1 className="mt-2 font-display text-4xl tracking-tight text-[var(--ink)]">
           Choose a run to log
         </h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <Link
           href={`/log/${todayIso}`}
           className="flex min-h-[260px] flex-col items-center justify-center rounded-[30px] border border-[var(--line)] bg-white p-6 text-center shadow-[0_18px_45px_rgba(32,44,37,0.08)] transition hover:-translate-y-0.5"
@@ -53,6 +54,8 @@ export default async function Page() {
             </button>
           </form>
         </div>
+
+        <StravaLogUploadCard />
       </div>
     </div>
   );

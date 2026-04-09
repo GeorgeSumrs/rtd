@@ -2,8 +2,6 @@ import type { ChecklistItem, RunEntry, RunSegment } from "@/lib/types";
 
 const DEFAULT_CHECKLIST = [
   "Run completed",
-  "Stretching",
-  "Hydration",
   "Recovery",
 ] as const;
 
@@ -98,27 +96,38 @@ export function isFutureDate(value: string, today = new Date()) {
   return compareIsoDates(value, toIsoDate(today)) > 0;
 }
 
-export function buildChecklistItems(
-  labels: readonly string[] = DEFAULT_CHECKLIST,
-  completed = false,
-) {
-  return labels.map((label, index) => ({
+export function buildChecklistItems(completed = false, recoveryCompleted = false) {
+  return DEFAULT_CHECKLIST.map((label, index) => ({
     id: `${label.toLowerCase().replace(/\s+/g, "-")}-${index}-${Date.now()}`,
     label,
-    completed: label === "Run completed" ? completed : false,
+    completed: label === "Run completed" ? completed : recoveryCompleted,
     order: index,
   }));
 }
 
-export function ensureChecklist(items: ChecklistItem[], entryCompleted: boolean) {
-  return items.map((item) =>
-    item.label === "Run completed"
-      ? {
-          ...item,
-          completed: entryCompleted,
-        }
-      : item,
-  );
+export function ensureChecklist(
+  items: ChecklistItem[],
+  entryCompleted: boolean,
+  recoveryCompleted: boolean,
+) {
+  const managedItems: ChecklistItem[] = DEFAULT_CHECKLIST.map((label, index) => {
+    const existing = items.find((item) => item.label === label);
+    return {
+      id: existing?.id ?? `${label.toLowerCase().replace(/\s+/g, "-")}-${index}-${Date.now()}`,
+      label,
+      completed: label === "Run completed" ? entryCompleted : recoveryCompleted,
+      order: index,
+    };
+  });
+
+  const extras = items
+    .filter((item) => !DEFAULT_CHECKLIST.includes(item.label as (typeof DEFAULT_CHECKLIST)[number]))
+    .map((item, index) => ({
+      ...item,
+      order: managedItems.length + index,
+    }));
+
+  return [...managedItems, ...extras];
 }
 
 export function createRunSegment(
@@ -206,7 +215,11 @@ export function buildRunEntryFromRuns({
     ...aggregate,
     notes,
     completedOverride,
-    checklistItems: ensureChecklist(checklistItems, aggregate.completed),
+    checklistItems: ensureChecklist(
+      checklistItems,
+      aggregate.completed,
+      checklistItems.find((item) => item.label === "Recovery")?.completed ?? false,
+    ),
     media,
     createdAt: createdAt ?? runs[0]?.createdAt ?? Date.now(),
     updatedAt: Date.now(),
