@@ -12,6 +12,7 @@ import {
   defaultSettings,
   ensureChecklist,
 } from "../lib/challenge";
+import { getSiteUrl } from "../lib/site-url";
 
 const splitArg = v.object({
   id: v.string(),
@@ -612,7 +613,7 @@ export const addEmailLogin = mutation({
       headers,
       body: {
         newEmail: args.email,
-        callbackURL: `${process.env.SITE_URL ?? "http://localhost:3000"}/dashboard`,
+        callbackURL: `${getSiteUrl()}/dashboard`,
       },
     });
     return { success: true };
@@ -629,7 +630,7 @@ export const changeEmailAddress = mutation({
       headers,
       body: {
         newEmail: args.email,
-        callbackURL: `${process.env.SITE_URL ?? "http://localhost:3000"}/dashboard`,
+        callbackURL: `${getSiteUrl()}/dashboard`,
       },
     });
     return { success: true };

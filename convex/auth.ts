@@ -6,13 +6,14 @@ import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
+import {
+  getAuthBaseUrl,
+  getSiteUrl,
+  getStravaOAuthCallbackUrl,
+} from "../lib/site-url";
 
 const STRAVA_ATHLETE_URL = "https://www.strava.com/api/v3/athlete";
 const PLACEHOLDER_EMAIL_DOMAIN = "strava.rtd.local";
-
-function getBaseUrl() {
-  return process.env.SITE_URL ?? "http://localhost:3000";
-}
 
 function getAuthSecret() {
   const secret = process.env.BETTER_AUTH_SECRET;
@@ -106,12 +107,20 @@ async function storeDevEmail(
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
-export const createAuth = (ctx: GenericCtx<DataModel>) =>
-  betterAuth({
-    baseURL: `${getBaseUrl()}/api/auth`,
+export const createAuth = (ctx: GenericCtx<DataModel>) => {
+  const siteUrl = getSiteUrl();
+  const authBaseUrl = getAuthBaseUrl();
+  const stravaCallbackUrl = getStravaOAuthCallbackUrl();
+
+  console.log("[auth] OAuth site URL:", siteUrl);
+  console.log("[auth] OAuth base URL:", authBaseUrl);
+  console.log("[auth] Strava redirect_uri:", stravaCallbackUrl);
+
+  return betterAuth({
+    baseURL: authBaseUrl,
     secret: getAuthSecret(),
     database: authComponent.adapter(ctx),
-    trustedOrigins: [getBaseUrl()],
+    trustedOrigins: [siteUrl],
     appName: "RTD Tracker",
     emailAndPassword: {
       enabled: true,
@@ -264,3 +273,4 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
       }),
     ],
   });
+};
