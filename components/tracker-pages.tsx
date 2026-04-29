@@ -204,7 +204,7 @@ function ProgressBar({
           <p className="text-sm font-semibold text-[var(--ink)]">{label}</p>
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">{helper}</p>
         </div>
-        <span className="text-2xl font-semibold text-[var(--ink)]">{Math.round(value)}%</span>
+        <span className="text-2xl font-semibold text-[var(--ink)]">{value.toFixed(2)}%</span>
       </div>
       <div className="mt-4 h-3 rounded-full bg-[var(--slate-soft)]">
         <div
