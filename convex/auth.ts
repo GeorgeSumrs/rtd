@@ -10,6 +10,7 @@ import {
   getAuthBaseUrl,
   getSiteUrl,
   getStravaOAuthCallbackUrl,
+  getTrustedOrigins,
 } from "../lib/site-url";
 
 const STRAVA_ATHLETE_URL = "https://www.strava.com/api/v3/athlete";
@@ -111,16 +112,18 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   const siteUrl = getSiteUrl();
   const authBaseUrl = getAuthBaseUrl();
   const stravaCallbackUrl = getStravaOAuthCallbackUrl();
+  const trustedOrigins = getTrustedOrigins();
 
   console.log("[auth] OAuth site URL:", siteUrl);
   console.log("[auth] OAuth base URL:", authBaseUrl);
   console.log("[auth] Strava redirect_uri:", stravaCallbackUrl);
+  console.log("[auth] trustedOrigins:", trustedOrigins);
 
   return betterAuth({
     baseURL: authBaseUrl,
     secret: getAuthSecret(),
     database: authComponent.adapter(ctx),
-    trustedOrigins: [siteUrl],
+    trustedOrigins,
     appName: "RTD Tracker",
     emailAndPassword: {
       enabled: true,

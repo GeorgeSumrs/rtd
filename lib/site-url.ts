@@ -22,3 +22,8 @@ export function getStravaOAuthCallbackUrl() {
   return `${getAuthBaseUrl()}/oauth2/callback/strava`;
 }
 
+export function getTrustedOrigins() {
+  return Array.from(
+    new Set(["http://localhost:3000", "https://rtd-three.vercel.app", getSiteUrl()]),
+  );
+}
