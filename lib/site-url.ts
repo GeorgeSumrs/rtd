@@ -1,5 +1,12 @@
 function normalizeSiteUrl(value: string) {
-  return value.replace(/\/+$/, "");
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(trimmed)) {
+    return `http://${trimmed}`;
+  }
+  return `https://${trimmed}`;
 }
 
 export function getSiteUrl() {
@@ -23,7 +30,18 @@ export function getStravaOAuthCallbackUrl() {
 }
 
 export function getTrustedOrigins() {
+  const localOrigins = ["http://localhost:3000", "http://localhost:3001"];
+  const siteUrl = getSiteUrl();
+  const localhostVariant = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(siteUrl)
+    ? [siteUrl]
+    : [];
+
   return Array.from(
-    new Set(["http://localhost:3000", "https://rtd-three.vercel.app", getSiteUrl()]),
+    new Set([
+      ...localOrigins,
+      ...localhostVariant,
+      "https://rtd-three.vercel.app",
+      siteUrl,
+    ]),
   );
 }

@@ -141,10 +141,19 @@ export function SignInCard() {
             setError(null);
             setStatus(null);
             try {
-              await authClient.signIn.oauth2({
+              const result = await authClient.signIn.oauth2({
                 providerId: "strava",
                 callbackURL: "/dashboard",
               });
+              if (result.error) {
+                throw new Error(result.error.message);
+              }
+              const redirectUrl = result.data?.url;
+              if (redirectUrl) {
+                window.location.assign(redirectUrl);
+                return;
+              }
+              throw new Error("Strava sign-in did not return a redirect URL.");
             } catch (nextError) {
               setError(nextError instanceof Error ? nextError.message : "Unable to start Strava sign-in.");
               setBusy(null);
@@ -253,10 +262,19 @@ export function SignUpCard() {
             setBusy("strava");
             setError(null);
             try {
-              await authClient.signIn.oauth2({
+              const result = await authClient.signIn.oauth2({
                 providerId: "strava",
                 callbackURL: "/dashboard",
               });
+              if (result.error) {
+                throw new Error(result.error.message);
+              }
+              const redirectUrl = result.data?.url;
+              if (redirectUrl) {
+                window.location.assign(redirectUrl);
+                return;
+              }
+              throw new Error("Strava sign-up did not return a redirect URL.");
             } catch (nextError) {
               setError(nextError instanceof Error ? nextError.message : "Unable to start Strava sign-up.");
               setBusy(null);
