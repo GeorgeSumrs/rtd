@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth-client";
 const nav = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/log", label: "Open Log" },
   { href: "/progress", label: "Progress" },
   { href: "/summary", label: "Summary" },
 ] as const;
@@ -40,6 +41,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/calendar" className="btn btn-secondary">
               Calendar
             </Link>
+            <Link href="/progress" className="btn btn-secondary">
+              Progress
+            </Link>
+            <Link href="/summary" className="btn btn-secondary">
+              Summary
+            </Link>
             <Link href="/settings" className="btn btn-secondary">
               Settings
             </Link>
@@ -63,14 +70,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="mx-auto w-full max-w-7xl px-5 py-8 pb-28 sm:px-8">{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-[color:rgba(246,242,235,.95)] backdrop-blur md:hidden">
-        <div className="mx-auto flex max-w-2xl justify-around px-2 py-3">
+        <div className="mx-auto flex max-w-3xl justify-around gap-1 px-2 py-3">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-full px-2 py-2 text-center text-[13px] font-medium transition ${
                   active
                     ? "bg-[var(--ink)] text-white"
                     : "text-[var(--muted)] hover:text-[var(--ink)]"
