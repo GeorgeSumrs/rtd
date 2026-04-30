@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={`rounded-full px-2 py-2 text-center text-[13px] font-medium transition ${
                   active
-                    ? "bg-[var(--ink)] text-white"
+                    ? "bg-[var(--ink)] !text-white"
                     : "text-[var(--muted)] hover:text-[var(--ink)]"
                 }`}
               >
