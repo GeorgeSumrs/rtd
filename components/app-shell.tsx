@@ -9,7 +9,6 @@ const nav = [
   { href: "/calendar", label: "Calendar" },
   { href: "/log", label: "Open Log" },
   { href: "/progress", label: "Progress" },
-  { href: "/summary", label: "Summary" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -43,9 +42,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
             <Link href="/progress" className="btn btn-secondary">
               Progress
-            </Link>
-            <Link href="/summary" className="btn btn-secondary">
-              Summary
             </Link>
             <Link href="/settings" className="btn btn-secondary">
               Settings

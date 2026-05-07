@@ -1006,6 +1006,11 @@ export function ProgressPage() {
     store.settings.year,
     store.settings.challengeStartDate,
   );
+  const summary = getYearlySummary(
+    entries,
+    store.settings.year,
+    store.settings.challengeStartDate,
+  );
   const chartData = getChartData(entries, store.settings.year);
   const pacePoints =
     paceScope === "30" ? chartData.paceTrend.slice(-30) : chartData.paceTrend;
@@ -1028,6 +1033,15 @@ export function ProgressPage() {
         {surface("Total miles logged", `${formatMiles(progress.totalLogged)} mi`, `${formatMiles(progress.totalRequired)} required to date`)}
         {surface("Surplus / deficit", `${progress.surplusDeficitMiles >= 0 ? "+" : ""}${formatMiles(progress.surplusDeficitMiles)} mi`, "Based on past required miles only")}
       </div>
+      {summary.bestPaceEntry ? (
+        <section className="grid gap-4 md:grid-cols-3">
+          {surface(
+            "Best pace day",
+            secondsToPaceString(summary.bestPaceEntry.avgPaceSeconds),
+            getShortDate(summary.bestPaceEntry.date),
+          )}
+        </section>
+      ) : null}
       <PolylineChart title="Cumulative miles" subtitle="Actual miles versus required miles across the challenge year." actual={chartData.cumulativeActual} required={chartData.cumulativeRequired} todayX={getDayOfYear(todayIso)} />
       <div className="flex gap-3">
         <button type="button" onClick={() => setPaceScope("30")} className={cx("btn", paceScope === "30" ? "btn-primary" : "btn-secondary")}>
@@ -1052,6 +1066,31 @@ export function ProgressPage() {
               Based on a current deficit of {formatMiles(Math.abs(Math.min(progress.surplusDeficitMiles, 0)))} miles over {daysUntilTarget} days.
             </p>
           </div>
+        </div>
+      </div>
+      <div className="rounded-[30px] border border-[var(--line)] bg-white p-6">
+        <SectionHeader eyebrow="Monthly breakdown" title="Month by month" body="Completion, mileage, and average pace summarize the shape of the year." />
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+              <tr>
+                <th className="pb-3">Month</th>
+                <th className="pb-3">Days completed</th>
+                <th className="pb-3">Miles logged</th>
+                <th className="pb-3">Avg pace</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.monthlyBreakdown.map((row) => (
+                <tr key={row.month} className="border-t border-[var(--line)]">
+                  <td className="py-3 font-medium text-[var(--ink)]">{getMonthName(row.month)}</td>
+                  <td className="py-3 text-[var(--muted)]">{row.daysCompleted}</td>
+                  <td className="py-3 text-[var(--muted)]">{formatMiles(row.totalMiles)} mi</td>
+                  <td className="py-3 text-[var(--muted)]">{row.avgPaceSeconds ? `${secondsToPaceString(row.avgPaceSeconds)} /mi` : "--"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
